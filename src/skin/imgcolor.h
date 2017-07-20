@@ -23,8 +23,8 @@
 class ImgAdd : public ImgColorProcessor {
 
 public:
-    ImgAdd(ImgSource* parent, int amt);
-    virtual QColor doColorCorrection(QColor c);
+    ImgAdd(const QSharedPointer<ImgSource>& parent, int amt);
+    QColor doColorCorrection(const QColor& c) const override;
 
 private:
     int m_amt;
@@ -33,19 +33,28 @@ private:
 class ImgMax : public ImgColorProcessor {
 
 public:
-    ImgMax(ImgSource* parent, int amt);
-    virtual QColor doColorCorrection(QColor c);
+    ImgMax(const QSharedPointer<ImgSource>& parent, int amt);
+    QColor doColorCorrection(const QColor& c) const override;
 
 private:
     int m_amt;
 };
 
+class ImgMonoColor : public ImgColorProcessor {
+    
+  public:
+    ImgMonoColor(const QSharedPointer<ImgSource>& parent, const QColor &baseColor);
+    QColor doColorCorrection(const QColor& c) const override;
+  private:
+    QColor m_baseColor;
+};
+
 class ImgScaleWhite : public ImgColorProcessor {
 
 public:
-    inline ImgScaleWhite(ImgSource* parent, float amt)
+    inline ImgScaleWhite(const QSharedPointer<ImgSource>& parent, float amt)
         : ImgColorProcessor(parent), m_amt(amt) {}
-    virtual QColor doColorCorrection(QColor c);
+    QColor doColorCorrection(const QColor& c) const override;
 private:
     float m_amt;
 };
@@ -53,9 +62,9 @@ private:
 class ImgHueRot : public ImgColorProcessor {
 
 public:
-    inline ImgHueRot(ImgSource* parent, int amt)
+    inline ImgHueRot(QSharedPointer<ImgSource> parent, int amt)
         : ImgColorProcessor(parent), m_amt(amt) {}
-    virtual QColor doColorCorrection(QColor c);
+    QColor doColorCorrection(const QColor& c) const override;
 
 private:
     int m_amt;
@@ -64,13 +73,13 @@ private:
 class ImgHueInv : public ImgColorProcessor {
 
 public:
-    inline ImgHueInv(ImgSource* parent) : ImgColorProcessor(parent) {}
-    virtual QColor doColorCorrection(QColor c);
+    inline ImgHueInv(const QSharedPointer<ImgSource>& parent) : ImgColorProcessor(parent) {}
+    QColor doColorCorrection(const QColor& c) const override;
 };
 
 class ImgHSVTweak : public ImgColorProcessor {
   public:
-    inline ImgHSVTweak(ImgSource* parent, int hmin, int hmax, int smin,
+    inline ImgHSVTweak(const QSharedPointer<ImgSource>& parent, int hmin, int hmax, int smin,
                        int smax, int vmin, int vmax, float hfact, int hconst, float sfact,
                        int sconst, float vfact, int vconst)
             : ImgColorProcessor(parent),
@@ -79,7 +88,7 @@ class ImgHSVTweak : public ImgColorProcessor {
               m_vmin(vmin), m_vmax(vmax),
               m_hconst(hconst), m_sconst(sconst), m_vconst(vconst),
               m_hfact(hfact), m_sfact(sfact), m_vfact(vfact) {}
-    virtual QColor doColorCorrection(QColor c);
+    QColor doColorCorrection(const QColor& c) const override;
 
   private:
     int m_hmin, m_hmax,

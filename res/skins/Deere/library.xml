@@ -14,12 +14,26 @@
       <!-- Main Library -->
       <WidgetGroup trigger="[Library],show_library">
         <ObjectName>LibraryExpanded</ObjectName>
-        <Layout>vertical</Layout>
-        <!-- Fixed is interesting here. Ignore is the only thing that lets it
-             shrink to nothing. -->
-        <SizePolicy>me,f</SizePolicy>
-        <MinimumSize>0,0</MinimumSize>
+        <Layout>horizontal</Layout>
         <Children>
+          <WidgetGroup>
+            <Layout>vertical</Layout>
+            <SizePolicy>min,me</SizePolicy>
+            <Children>
+              <Template src="skin:hide_show_button.xml">
+                <SetVariable name="TooltipId">show_library</SetVariable>
+                <SetVariable name="object_name">LibraryToggle</SetVariable>
+                <SetVariable name="control">[Library],show_library</SetVariable>
+              </Template>
+              <WidgetGroup>
+                <Size>6,6</Size>
+              </WidgetGroup>
+              <LibrarySidebarButtons>
+                <SizePolicy>min,me</SizePolicy>
+                <ObjectName>LibrarySidebarButtons</ObjectName>
+              </LibrarySidebarButtons>
+            </Children>
+          </WidgetGroup>
           <!-- QSplitter between LibrarySidebar and Library -->
           <Splitter>
             <ObjectName>LibrarySplitter</ObjectName>
@@ -31,18 +45,6 @@
               <WidgetGroup>
                 <Layout>vertical</Layout>
                 <Children>
-                  <WidgetGroup>
-                    <Layout>horizontal</Layout>
-                    <Children>
-                      <Template src="skin:hide_show_button.xml">
-                        <SetVariable name="TooltipId">show_library</SetVariable>
-                        <SetVariable name="object_name">LibraryToggle</SetVariable>
-                        <SetVariable name="control">[Library],show_library</SetVariable>
-                      </Template>
-                      <SearchBox>
-                      </SearchBox>
-                    </Children>
-                  </WidgetGroup>
                   <WidgetGroup>
                     <ObjectName>PreviewDeckContainer</ObjectName>
                     <Layout>vertical</Layout>
@@ -138,11 +140,22 @@
                       </WidgetGroup>
                     </Children>
                     <Connection>
-                      <ConfigKey persist="true">[PreviewDeck],show_previewdeck</ConfigKey>
+                      <ConfigKey>[PreviewDeck],show_previewdeck</ConfigKey>
                       <BindProperty>visible</BindProperty>
                     </Connection>
                   </WidgetGroup>
-
+                  <WidgetGroup>
+                    <Layout>horizontal</Layout>
+                    <Children>
+                      <Template src="skin:hide_show_button.xml">
+                        <SetVariable name="TooltipId">maximize_library</SetVariable>
+                        <SetVariable name="object_name">LibraryToggle</SetVariable>
+                        <SetVariable name="control">[Master],maximize_library</SetVariable>
+                      </Template>
+                      <SearchBox>
+                      </SearchBox>
+                    </Children>
+                  </WidgetGroup>
                   <!-- QSplitter between LibrarySidebar and CoverArt -->
                   <Splitter>
                     <ObjectName>LibraryCoverArtSplitter</ObjectName>
@@ -153,8 +166,9 @@
                     <SplitSizes>2,8</SplitSizes>
                     <Collapsible>0,0</Collapsible>
                     <Children>
-                      <LibrarySidebar>
-                      </LibrarySidebar>
+                      <LibrarySidebarExpanded>
+                        <ObjectName>LibrarySidebarExpanded</ObjectName>
+                      </LibrarySidebarExpanded>
 
                       <CoverArt>
                         <ObjectName>LibraryCoverArt</ObjectName>
@@ -162,7 +176,7 @@
                         <SizePolicy>me,me</SizePolicy>
                         <MinimumSize>30,30</MinimumSize>
                         <Connection>
-                          <ConfigKey persist="true">[Library],show_coverart</ConfigKey>
+                          <ConfigKey>[Library],show_coverart</ConfigKey>
                           <BindProperty>visible</BindProperty>
                         </Connection>
                       </CoverArt>
@@ -170,27 +184,35 @@
                   </Splitter>
                 </Children>
               </WidgetGroup>
-              <Library>
-              </Library>
+
+              <!-- For Track table 1 -->
+              <WidgetGroup>
+                <Layout>vertical</Layout>
+                <Children>
+                  <LibraryBreadCrumb>
+                    <ObjectName>LibraryBreadCrumb</ObjectName>
+                    <Id>1</Id>
+                  </LibraryBreadCrumb>
+                  <SearchBox>
+                    <Id>1</Id>
+                  </SearchBox>
+                  <LibraryPane>
+                    <Id>1</Id>
+                  </LibraryPane>
+                </Children>
+              </WidgetGroup>
             </Children>
           </Splitter>
         </Children>
       </WidgetGroup>
 
-      <!-- Collapsed Library -->
+      <!-- Hidden Library -->
       <WidgetGroup>
         <ObjectName>LibraryCollapsed</ObjectName>
         <Layout>vertical</Layout>
         <MinimumSize>-1,20</MinimumSize>
         <MaximumSize>-1,20</MaximumSize>
         <SizePolicy>me,min</SizePolicy>
-        <Children>
-          <Template src="skin:hide_show_button.xml">
-            <SetVariable name="TooltipId">show_library</SetVariable>
-            <SetVariable name="object_name">LibraryToggle</SetVariable>
-            <SetVariable name="control">[Library],show_library</SetVariable>
-          </Template>
-        </Children>
       </WidgetGroup>
 
     </Children>

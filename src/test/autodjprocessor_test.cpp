@@ -5,7 +5,7 @@
 #include <QScopedPointer>
 
 #include "test/librarytest.h"
-#include "library/autodj/autodjprocessor.h"
+#include "library/features/autodj/autodjprocessor.h"
 #include "control/controlpushbutton.h"
 #include "control/controlpotmeter.h"
 #include "control/controllinpotmeter.h"
@@ -143,7 +143,7 @@ class AutoDJProcessorTest : public LibraryTest {
     static TrackPointer newTestTrack(TrackId trackId) {
         TrackPointer pTrack(
                 Track::newDummy(kTrackLocationTest, trackId));
-        SoundSourceProxy(pTrack).loadTrackMetadata();
+        SoundSourceProxy(pTrack).updateTrack();
         return pTrack;
     }
 

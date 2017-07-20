@@ -11,8 +11,10 @@ class KeyboardEventFilter;
 class PlayerManager;
 class ControllerManager;
 class Library;
+class LibraryPaneManager;
 class VinylControlManager;
 class EffectsManager;
+class RecordingManager;
 class LaunchImage;
 
 class SkinLoader {
@@ -26,7 +28,8 @@ class SkinLoader {
                              ControllerManager* pControllerManager,
                              Library* pLibrary,
                              VinylControlManager* pVCMan,
-                             EffectsManager* pEffectsManager);
+                             EffectsManager* pEffectsManager,
+                             RecordingManager* pRecordingManager);
 
     LaunchImage* loadLaunchImage(QWidget* pParent);
 

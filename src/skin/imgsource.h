@@ -20,47 +20,56 @@
 
 #include <QImage>
 #include <QColor>
-#include <QString>
+#include <QDebug>
 #include <QRgb>
-#include <QtDebug>
+#include <QSharedPointer>
+#include <QString>
 
 class ImgSource {
   public:
-    virtual ~ImgSource() {};
-    virtual QImage* getImage(QString img) = 0;
-    virtual inline QColor getCorrectColor(QColor c) { return c; }
-    virtual void correctImageColors(QImage* p) { (void)p; };
+    virtual ~ImgSource() {}
+    virtual QImage* getImage(const QString& fileName, double scaleFactor) const = 0;
+    virtual QColor getCorrectColor(const QColor& c) const { return c; }
+    virtual void correctImageColors(QImage* p) const { (void)p; };
+    virtual bool willCorrectColors() const { return false; };
+  protected:
+    virtual void correctImageColorsInner(QImage*) const {}
 };
 
 class ImgProcessor : public ImgSource {
 
   public:
-    virtual ~ImgProcessor() {};
-    inline ImgProcessor(ImgSource* parent) : m_parent(parent) {}
-    virtual QColor doColorCorrection(QColor c) = 0;
-    inline QColor getCorrectColor(QColor c) {
+    ~ImgProcessor() override {}
+    inline ImgProcessor(const QSharedPointer<ImgSource>& parent) : m_parent(parent) {}
+    virtual QColor doColorCorrection(const QColor& c) const = 0;
+    QColor getCorrectColor(const QColor& c) const override {
         return doColorCorrection(m_parent->getCorrectColor(c));
     }
-    virtual void correctImageColors(QImage* p) { (void)p; };
-
-  protected:
-    ImgSource* m_parent;
+    void correctImageColors(QImage* pImg) const override {
+        m_parent->correctImageColors(pImg);
+        correctImageColorsInner(pImg);
+    }
+bool willCorrectColors() const override { return false; }
+ protected:
+    QSharedPointer<ImgSource> m_parent;
 };
 
 class ImgColorProcessor : public ImgProcessor {
 
-public:
-    virtual ~ImgColorProcessor() {};
+  public:
+    ~ImgColorProcessor() override {}
 
-    inline ImgColorProcessor(ImgSource* parent) : ImgProcessor(parent) {}
+    inline ImgColorProcessor(const QSharedPointer<ImgSource>& parent)
+            : ImgProcessor(parent) {}
 
-    inline virtual QImage* getImage(QString img) {
-        QImage* i = m_parent->getImage(img);
-        correctImageColors(i);
+    QImage* getImage(const QString& fileName, double scaleFactor) const override {
+        QImage* i = m_parent->getImage(fileName, scaleFactor);
+        correctImageColorsInner(i);
         return i;
     }
 
-    virtual void correctImageColors(QImage* i) {
+  protected:
+    void correctImageColorsInner(QImage* i) const override {
         if (i == NULL || i->isNull()) {
             return;
         }
@@ -131,6 +140,8 @@ public:
             }
         }
     }
+
+    bool willCorrectColors() const override { return true; }
 };
 
 #endif

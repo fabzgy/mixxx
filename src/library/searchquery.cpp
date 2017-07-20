@@ -31,7 +31,7 @@ QVariant getTrackValueForColumn(const TrackPointer& pTrack, const QString& colum
     } else if (column == LIBRARYTABLE_TRACKNUMBER) {
         return pTrack->getTrackNumber();
     } else if (column == LIBRARYTABLE_LOCATION) {
-        return pTrack->getLocation();
+        return QDir::toNativeSeparators(pTrack->getLocation());
     } else if (column == LIBRARYTABLE_COMMENT) {
         return pTrack->getComment();
     } else if (column == LIBRARYTABLE_DURATION) {
@@ -148,22 +148,89 @@ bool TextFilterNode::match(const TrackPointer& pTrack) const {
             continue;
         }
 
-        if (value.toString().contains(m_argument, Qt::CaseInsensitive)) {
-            return true;
+        if (m_argument.isEmpty()) {
+            if  (value.toString().isEmpty()) {
+                return true;
+            }
+        } else {
+            if (value.toString().contains(m_argument, Qt::CaseInsensitive)) {
+                return true;
+            }
         }
     }
     return false;
 }
 
 QString TextFilterNode::toSql() const {
-    FieldEscaper escaper(m_database);
-    QString escapedArgument = escaper.escapeString(kSqlLikeMatchAll + m_argument + kSqlLikeMatchAll);
-
     QStringList searchClauses;
-    for (const auto& sqlColumn: m_sqlColumns) {
-        searchClauses << QString("%1 LIKE %2").arg(sqlColumn, escapedArgument);
+    QString concatOp;
+    if (m_argument.isEmpty()) {
+        for (const auto& sqlColumn: m_sqlColumns) {
+            searchClauses << QString("(%1 = \"\") OR (%1 IS NULL)").arg(sqlColumn);
+        }
+        // Here we need AND instead of OR cause "artist IS NULL or album_artist IS NULL"
+        // returns every track that has either of them NULL, and what we want is to return
+        // only those without artist at all. The other fields are not affected.
+        concatOp = "AND";
+    } else {
+        FieldEscaper escaper(m_database);
+        QString escapedArgument = escaper.escapeString(kSqlLikeMatchAll + m_argument + kSqlLikeMatchAll);
+
+        for (const auto& sqlColumn: m_sqlColumns) {
+            searchClauses << QString("%1 LIKE %2").arg(sqlColumn, escapedArgument);
+        }
+        concatOp = "OR";
     }
-    return concatSqlClauses(searchClauses, "OR");
+    return concatSqlClauses(searchClauses, concatOp);
+}
+
+QString ExactFilterNode::toSql() const {
+    QStringList searchClauses;
+    QString concatOp;
+    if (m_argument.isEmpty()) {
+        for (const auto& sqlColumn: m_sqlColumns) {
+            searchClauses << QString("(%1 = \"\") OR (%1 IS NULL)").arg(sqlColumn);
+        }
+        // Here we need AND instead of OR cause "artist IS NULL or album_artist IS NULL"
+        // returns every track that has either of them NULL, and what we want is to return
+        // only those without artist at all. The other fields are not affected.
+        concatOp = "AND";
+    } else {
+        FieldEscaper escaper(m_database);
+        QString escapedArgument = escaper.escapeString(m_argument);
+
+        for (const QString& sqlColumn : m_sqlColumns) {
+            searchClauses << QString("%1 GLOB %2").arg(sqlColumn, escapedArgument);
+        }
+        concatOp = "OR";
+    }
+    return concatSqlClauses(searchClauses, concatOp);
+}
+
+CrateFilterNode::CrateFilterNode(const CrateStorage* pCrateStorage,
+                                 const QString& crateNameLike)
+    : m_pCrateStorage(pCrateStorage),
+      m_crateNameLike(crateNameLike),
+      m_matchInitialized(false) {
+}
+
+bool CrateFilterNode::match(const TrackPointer& pTrack) const {
+    if (!m_matchInitialized) {
+        CrateTrackSelectResult crateTracks(
+             m_pCrateStorage->selectTracksSortedByCrateNameLike(m_crateNameLike));
+
+        while (crateTracks.next()) {
+            m_matchingTrackIds.push_back(crateTracks.trackId());
+        }
+
+        m_matchInitialized = true;
+    }
+
+    return std::binary_search(m_matchingTrackIds.begin(), m_matchingTrackIds.end(), pTrack->getId());
+}
+
+QString CrateFilterNode::toSql() const {
+    return QString("id IN (%1)").arg(m_pCrateStorage->formatQueryForTrackIdsByCrateNameLike(m_crateNameLike));
 }
 
 NumericFilterNode::NumericFilterNode(const QStringList& sqlColumns)

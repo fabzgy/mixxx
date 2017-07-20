@@ -12,6 +12,8 @@ class PortAudio(Dependence):
         if not conf.CheckLib('portaudio'):
             raise Exception(
                 'Did not find libportaudio.a, portaudio.lib, or the PortAudio-v19 development header files.')
+        elif build.platform_is_linux:
+            build.env.ParseConfig('pkg-config portaudio-2.0 --silence-errors --cflags --libs')
 
         # Turn on PortAudio support in Mixxx
         build.env.Append(CPPDEFINES='__PORTAUDIO__')
@@ -93,12 +95,12 @@ class CoreServices(Dependence):
         build.env.Append(LINKFLAGS='-framework CoreServices')
 
 class IOKit(Dependence):
-    """IOKit is used to get battery measurements on OS X and iOS."""
+    """Used for battery measurements and controlling the screensaver on OS X and iOS."""
     def configure(self, build, conf):
         if not build.platform_is_osx:
             return
         build.env.Append(
-            CPPPATH='/Library/Frameworks/IOKit.framework/Headers/')
+            CPPPATH='/System/Library/Frameworks/IOKit.framework/Headers/')
         build.env.Append(LINKFLAGS='-framework IOKit')
 
 class UPower(Dependence):
@@ -155,6 +157,8 @@ class SndFile(Dependence):
             raise Exception(
                 "Did not find libsndfile or it\'s development headers")
         build.env.Append(CPPDEFINES='__SNDFILE__')
+        if conf.CheckDeclaration('SFC_SET_COMPRESSION_LEVEL', '#include "sndfile.h"'):
+            build.env.Append(CPPDEFINES='SFC_SUPPORTS_SET_COMPRESSION_LEVEL')
 
         if build.platform_is_windows and build.static_dependencies:
             build.env.Append(CPPDEFINES='FLAC__NO_DLL')
@@ -281,6 +285,7 @@ class Qt(Dependence):
             elif not qt5 and not conf.CheckForPKG('QtCore', '4.6'):
                 raise Exception('QT >= 4.6 not found')
 
+            qt_modules.extend(['QtDBus'])
             # This automatically converts QtXXX to Qt5XXX where appropriate.
             if qt5:
                 build.env.EnableQt5Modules(qt_modules, debug=False)
@@ -435,7 +440,6 @@ class TestHeaders(Dependence):
         build.env.Append(CPPPATH="#lib/gtest-1.7.0/include")
 
 class FidLib(Dependence):
-
     def sources(self, build):
         symbol = None
         if build.platform_is_windows:
@@ -658,6 +662,8 @@ class MixxxCore(Feature):
                    "controllers/dlgprefcontrollers.cpp",
                    "dialog/dlgabout.cpp",
                    "dialog/dlgdevelopertools.cpp",
+                   "dialog/savedqueries/dlgsavedquerieseditor.cpp",
+                   "dialog/savedqueries/savedqueriestablemodel.cpp",
 
                    "preferences/configobject.cpp",
                    "preferences/dialog/dlgprefautodj.cpp",
@@ -775,6 +781,7 @@ class MixxxCore(Feature):
                    "analyzer/analyzerebur128.cpp",
 
                    "controllers/controller.cpp",
+                   "controllers/controllerdebug.cpp",
                    "controllers/controllerengine.cpp",
                    "controllers/controllerenumerator.cpp",
                    "controllers/controllerlearningeventfilter.cpp",
@@ -822,6 +829,7 @@ class MixxxCore(Feature):
                    "widget/wlabel.cpp",
                    "widget/wtracktext.cpp",
                    "widget/wnumber.cpp",
+                   "widget/wbeatspinbox.cpp",
                    "widget/wnumberdb.cpp",
                    "widget/wnumberpos.cpp",
                    "widget/wnumberrate.cpp",
@@ -841,6 +849,7 @@ class MixxxCore(Feature):
                    "widget/wskincolor.cpp",
                    "widget/wsearchlineedit.cpp",
                    "widget/wpixmapstore.cpp",
+                   "widget/paintable.cpp",
                    "widget/wimagestore.cpp",
                    "widget/hexspinbox.cpp",
                    "widget/wtrackproperty.cpp",
@@ -852,6 +861,7 @@ class MixxxCore(Feature):
                    "widget/weffectbuttonparameter.cpp",
                    "widget/weffectparameterbase.cpp",
                    "widget/wtime.cpp",
+                   "widget/wrecordingduration.cpp",
                    "widget/wkey.cpp",
                    "widget/wbattery.cpp",
                    "widget/wcombobox.cpp",
@@ -861,6 +871,13 @@ class MixxxCore(Feature):
                    "widget/wcoverartmenu.cpp",
                    "widget/wsingletoncontainer.cpp",
                    "widget/wmainmenubar.cpp",
+                   "widget/wbuttonbar.cpp",
+                   "widget/wfeatureclickbutton.cpp",
+                   "widget/wlibrarystack.cpp",
+                   "widget/wlibrarybreadcrumb.cpp",
+                   "widget/wminiviewscrollbar.cpp",
+                   "widget/wverticalscrollarea.cpp",
+                   "widget/wtristatebutton.cpp",
 
                    "musicbrainz/network.cpp",
                    "musicbrainz/tagfetcher.cpp",
@@ -873,10 +890,15 @@ class MixxxCore(Feature):
                    "widget/wtracktableview.cpp",
                    "widget/wtracktableviewheader.cpp",
                    "widget/wlibrarysidebar.cpp",
-                   "widget/wlibrary.cpp",
+                   "widget/wlibrarypane.cpp",
+                   "widget/wbaselibrary.cpp",
                    "widget/wlibrarytableview.cpp",
                    "widget/wanalysislibrarytableview.cpp",
                    "widget/wlibrarytextbrowser.cpp",
+
+                   "database/mixxxdb.cpp",
+                   "database/schemamanager.cpp",
+
                    "library/trackcollection.cpp",
                    "library/basesqltablemodel.cpp",
                    "library/basetrackcache.cpp",
@@ -884,66 +906,81 @@ class MixxxCore(Feature):
                    "library/librarytablemodel.cpp",
                    "library/searchquery.cpp",
                    "library/searchqueryparser.cpp",
-                   "library/analysislibrarytablemodel.cpp",
-                   "library/missingtablemodel.cpp",
-                   "library/hiddentablemodel.cpp",
                    "library/proxytrackmodel.cpp",
                    "library/coverart.cpp",
                    "library/coverartcache.cpp",
                    "library/coverartutils.cpp",
 
-                   "library/crate/cratestorage.cpp",
-                   "library/crate/cratefeature.cpp",
-                   "library/crate/cratefeaturehelper.cpp",
-                   "library/crate/cratetablemodel.cpp",
-
-                   "library/playlisttablemodel.cpp",
                    "library/libraryfeature.cpp",
-                   "library/analysisfeature.cpp",
-                   "library/autodj/autodjfeature.cpp",
-                   "library/autodj/autodjprocessor.cpp",
                    "library/dao/directorydao.cpp",
-                   "library/mixxxlibraryfeature.cpp",
-                   "library/baseplaylistfeature.cpp",
-                   "library/playlistfeature.cpp",
-                   "library/setlogfeature.cpp",
-                   "library/autodj/dlgautodj.cpp",
-                   "library/dlganalysis.cpp",
                    "library/dlgcoverartfullsize.cpp",
-                   "library/dlghidden.cpp",
-                   "library/dlgmissing.cpp",
                    "library/dlgtagfetcher.cpp",
                    "library/dlgtrackinfo.cpp",
-
-                   "library/browse/browsetablemodel.cpp",
-                   "library/browse/browsethread.cpp",
-                   "library/browse/browsefeature.cpp",
-                   "library/browse/foldertreemodel.cpp",
+                   "library/dao/savedqueriesdao.cpp",
 
                    "library/export/trackexportdlg.cpp",
                    "library/export/trackexportwizard.cpp",
                    "library/export/trackexportworker.cpp",
 
-                   "library/recording/recordingfeature.cpp",
-                   "library/recording/dlgrecording.cpp",
                    "recording/recordingmanager.cpp",
                    "engine/sidechain/enginerecord.cpp",
 
+                   # Library Features
+                   "library/features/analysis/analysisfeature.cpp",
+                   "library/features/analysis/analysislibrarytablemodel.cpp",
+                   "library/features/analysis/dlganalysis.cpp",
+                   
+                   "library/features/autodj/autodjfeature.cpp",
+                   "library/features/autodj/autodjprocessor.cpp",
+                   "library/features/autodj/dlgautodj.cpp",
+
+                   "library/features/banshee/bansheedbconnection.cpp",
+                   "library/features/banshee/bansheefeature.cpp",
+                   "library/features/banshee/bansheeplaylistmodel.cpp",
+                   
+                   "library/features/baseplaylist/baseplaylistfeature.cpp",
+
+                   "library/features/browse/browsefeature.cpp",
+                   "library/features/browse/browsetablemodel.cpp",
+                   "library/features/browse/browsethread.cpp",
+                   "library/features/browse/foldertreemodel.cpp",
+
+                   "library/features/crates/cratefeature.cpp",
+                   "library/features/crates/cratetablemodel.cpp",
+                   "library/features/crates/cratestorage.cpp",
+                   "library/features/crates/cratefeaturehelper.cpp",
+
+                   "library/features/history/historyfeature.cpp",
+                   "library/features/history/historytreemodel.cpp",
+                   
+                   "library/features/libraryfolder/libraryfoldermodel.cpp",
+                   
+                   "library/features/maintenance/dlghidden.cpp",
+                   "library/features/maintenance/dlgmissing.cpp",
+                   "library/features/maintenance/hiddentablemodel.cpp",
+                   "library/features/maintenance/maintenancefeature.cpp",
+                   "library/features/maintenance/missingtablemodel.cpp",
+
+                   "library/features/playlist/playlistfeature.cpp",
+                   "library/features/playlist/playlisttablemodel.cpp",
+
+                   "library/features/tracks/tracksfeature.cpp",
+                   "library/features/tracks/trackstreemodel.cpp",
+
                    # External Library Features
-                   "library/baseexternallibraryfeature.cpp",
-                   "library/baseexternaltrackmodel.cpp",
-                   "library/baseexternalplaylistmodel.cpp",
-                   "library/rhythmbox/rhythmboxfeature.cpp",
+                   "library/features/baseexternalfeature/baseexternallibraryfeature.cpp",
+                   "library/features/baseexternalfeature/baseexternalplaylistmodel.cpp",
+                   "library/features/baseexternalfeature/baseexternaltrackmodel.cpp",
 
-                   "library/banshee/bansheefeature.cpp",
-                   "library/banshee/bansheeplaylistmodel.cpp",
-                   "library/banshee/bansheedbconnection.cpp",
-
-                   "library/itunes/itunesfeature.cpp",
-                   "library/traktor/traktorfeature.cpp",
-
-                   "library/sidebarmodel.cpp",
+                   "library/features/itunes/itunesfeature.cpp",
+                   "library/features/recording/dlgrecording.cpp",
+                   "library/features/recording/recordingfeature.cpp",
+                   "library/features/rhythmbox/rhythmboxfeature.cpp",
+                   "library/features/traktor/traktorfeature.cpp",
+                   
                    "library/library.cpp",
+                   "library/librarypanemanager.cpp",
+                   "library/librarysidebarexpandedmanager.cpp",
 
                    "library/scanner/libraryscanner.cpp",
                    "library/scanner/libraryscannerdlg.cpp",
@@ -961,7 +998,6 @@ class MixxxCore(Feature):
                    "library/dao/autodjcratesdao.cpp",
 
                    "library/librarycontrol.cpp",
-                   "library/schemamanager.cpp",
                    "library/songdownloader.cpp",
                    "library/starrating.cpp",
                    "library/stardelegate.cpp",
@@ -1078,6 +1114,13 @@ class MixxxCore(Feature):
                    "encoder/encoder.cpp",
                    "encoder/encodermp3.cpp",
                    "encoder/encodervorbis.cpp",
+                   "encoder/encoderwave.cpp",
+                   "encoder/encodersndfileflac.cpp",
+                   "encoder/encodermp3settings.cpp",
+                   "encoder/encodervorbissettings.cpp",
+                   "encoder/encoderwavesettings.cpp",
+                   "encoder/encoderflacsettings.cpp",
+                   "encoder/encoderbroadcastsettings.cpp",
 
                    "util/sleepableqthread.cpp",
                    "util/statsmanager.cpp",
@@ -1102,6 +1145,9 @@ class MixxxCore(Feature):
                    "util/movinginterquartilemean.cpp",
                    "util/console.cpp",
                    "util/db/dbconnection.cpp",
+                   "util/db/dbconnectionpool.cpp",
+                   "util/db/dbconnectionpooler.cpp",
+                   "util/db/dbconnectionpooled.cpp",
                    "util/db/dbid.cpp",
                    "util/db/fwdsqlquery.cpp",
                    "util/db/fwdsqlqueryselectresult.cpp",
@@ -1114,9 +1160,14 @@ class MixxxCore(Feature):
                    "util/singularsamplebuffer.cpp",
                    "util/circularsamplebuffer.cpp",
                    "util/rotary.cpp",
+                   "util/logger.cpp",
                    "util/logging.cpp",
                    "util/cmdlineargs.cpp",
                    "util/audiosignal.cpp",
+                   "util/stringhelper.cpp",
+                   "util/widgethider.cpp",
+                   "util/autohidpi.cpp",
+                   "util/screensaver.cpp",
 
                    '#res/mixxx.qrc'
                    ]
@@ -1141,15 +1192,16 @@ class MixxxCore(Feature):
             'controllers/dlgprefcontrollersdlg.ui',
             'dialog/dlgaboutdlg.ui',
             'dialog/dlgdevelopertoolsdlg.ui',
-            'library/autodj/dlgautodj.ui',
-            'library/dlganalysis.ui',
+            'dialog/savedqueries/dlgsavedquerieseditor.ui',
             'library/dlgcoverartfullsize.ui',
-            'library/dlghidden.ui',
-            'library/dlgmissing.ui',
             'library/dlgtagfetcher.ui',
             'library/dlgtrackinfo.ui',
             'library/export/dlgtrackexport.ui',
-            'library/recording/dlgrecording.ui',
+            'library/features/analysis/dlganalysis.ui',
+            'library/features/autodj/dlgautodj.ui',
+            'library/features/maintenance/dlghidden.ui',
+            'library/features/maintenance/dlgmissing.ui',
+            'library/features/recording/dlgrecording.ui',
             'preferences/dialog/dlgprefautodjdlg.ui',
             'preferences/dialog/dlgprefbeatsdlg.ui',
             'preferences/dialog/dlgprefcontrolsdlg.ui',
@@ -1394,7 +1446,7 @@ class MixxxCore(Feature):
     def depends(self, build):
         return [SoundTouch, ReplayGain, Ebur128Mit, PortAudio, PortMIDI, Qt, TestHeaders,
                 FidLib, SndFile, FLAC, OggVorbis, OpenGL, TagLib, ProtoBuf,
-                Chromaprint, RubberBand, SecurityFramework, CoreServices,
+                Chromaprint, RubberBand, SecurityFramework, CoreServices, IOKit,
                 QtScriptByteArray, Reverb, FpClassify, PortAudioRingBuffer]
 
     def post_dependency_check_configure(self, build, conf):

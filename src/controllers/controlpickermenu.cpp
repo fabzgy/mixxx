@@ -402,6 +402,10 @@ ControlPickerMenu::ControlPickerMenu(QWidget* pParent)
                        tr("Move focus to right/left pane"),
                        tr("Move focus one pane to right or left using a knob, as if pressing TAB/SHIFT+TAB keys"),
                        m_libraryStr, libraryMenu);
+    addPrefixedControl("[Library]", "GoToItem",
+                       tr("Go to the currently selected item"),
+                       tr("Choose the currently selected item and advance forward one pane if appropriate"),
+                       m_libraryStr, libraryMenu);
     addPrefixedControl("[Library]", "AutoDjAddBottom",
                        tr("Add to Auto DJ Queue (bottom)"),
                        tr("Append the selected track to the Auto DJ Queue"),
@@ -749,6 +753,9 @@ ControlPickerMenu::ControlPickerMenu(QWidget* pParent)
     addControl("[Library]", "show_coverart",
                tr("Cover Art Show/Hide"),
                tr("Show/hide cover art"), guiMenu);
+    addControl("[Library]", "show_icon_text",
+               tr("Icons' text Show/Hide"),
+               tr("Show/Hide icons' text"), guiMenu);
 
     QString spinnyTitle = tr("Vinyl Spinner Show/Hide");
     QString spinnyDescription = tr("Show/hide spinning vinyl widget");

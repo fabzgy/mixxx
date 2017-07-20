@@ -16,9 +16,11 @@
 
 class WBaseWidget;
 class Library;
+class LibraryPaneManager;
 class KeyboardEventFilter;
 class PlayerManager;
 class EffectsManager;
+class RecordingManager;
 class ControllerManager;
 class SkinContext;
 class WLabel;
@@ -34,7 +36,8 @@ class LegacySkinParser : public QObject, public SkinParser {
                      KeyboardEventFilter* pKeyboard, PlayerManager* pPlayerManager,
                      ControllerManager* pControllerManager,
                      Library* pLibrary, VinylControlManager* pVCMan,
-                     EffectsManager* pEffectsManager);
+                     EffectsManager* pEffectsManager,
+                     RecordingManager* pRecordingManager);
     virtual ~LegacySkinParser();
 
     virtual bool canParse(const QString& skinPath);
@@ -75,6 +78,7 @@ class LegacySkinParser : public QObject, public SkinParser {
     QWidget* parseNumberRate(const QDomElement& node);
     QWidget* parseNumberPos(const QDomElement& node);
     QWidget* parseEngineKey(const QDomElement& node);
+    QWidget* parseBeatSpinBox(const QDomElement& node);
     QWidget* parseEffectChainName(const QDomElement& node);
     QWidget* parseEffectName(const QDomElement& node);
     QWidget* parseEffectParameterName(const QDomElement& node);
@@ -101,9 +105,14 @@ class LegacySkinParser : public QObject, public SkinParser {
     // Library widgets.
     QWidget* parseTableView(const QDomElement& node);
     QWidget* parseSearchBox(const QDomElement& node);
-    QWidget* parseLibrary(const QDomElement& node);
+    QWidget* parseLibraryPane(const QDomElement& node);
     QWidget* parseLibrarySidebar(const QDomElement& node);
+    QWidget* parseLibrarySidebarButtons(const QDomElement& node);
+    QWidget* parseLibrarySidebarExpanded(const QDomElement& node);
+    QWidget* parseLibraryBreadCrumb(const QDomElement& node);
+    QWidget* parseLibrary(const QDomElement& node);
     QWidget* parseBattery(const QDomElement& node);
+    QWidget* parseRecordingDuration(const QDomElement& node);
     QWidget* parseCoverArt(const QDomElement& node);
 
     // Renders a template.
@@ -137,12 +146,14 @@ class LegacySkinParser : public QObject, public SkinParser {
     Library* m_pLibrary;
     VinylControlManager* m_pVCManager;
     EffectsManager* m_pEffectsManager;
+    RecordingManager* m_pRecordingManager;
     QWidget* m_pParent;
     std::unique_ptr<SkinContext> m_pContext;
     Tooltips m_tooltips;
     QHash<QString, QDomElement> m_templateCache;
     static QList<const char*> s_channelStrs;
     static QMutex s_safeStringMutex;
+    int m_paneId;
 };
 
 
